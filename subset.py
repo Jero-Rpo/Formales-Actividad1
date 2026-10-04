@@ -3,11 +3,11 @@ import re
 import sys
 from collections import deque
 
-VACIO = frozenset()  # el conjunto vacío: significa "no hay transición" (no es un estado del AFD)
+VACIO = frozenset()  # el conjunto vacío (se escribe 0): es un estado más del AFD
 CONJUNTO_O_NUMERO = re.compile(r"\{[^}]*\}|\d+")  # encuentra "{1 5}" o "3"
 
 
-# lectura 
+# lectura
 
 def leer_numeros(linea):
     """'3 5' -> [3, 5]. Una línea con solo '0' significa sin estados -> []."""
@@ -46,7 +46,7 @@ def leer_caso(lineas):
     return estados_iniciales, alfabeto, estados_finales, delta
 
 
-# nalgoritmo 
+# algoritmo
 
 def mover(delta, estados, simbolo):
     """Unión de delta(q, simbolo) para cada q en estados."""
@@ -66,7 +66,7 @@ def construccion_subconjuntos(estados_iniciales, alfabeto, delta):
         for simbolo in alfabeto:
             destino = mover(delta, actual, simbolo)
             delta_afd[(actual, simbolo)] = destino
-            if destino and destino not in estados_afd:
+            if destino not in estados_afd:
                 estados_afd.append(destino)
                 pendientes.append(destino)
     return estados_afd, delta_afd
@@ -77,7 +77,7 @@ def finales_del_afd(estados_afd, finales_afn):
     return [A for A in estados_afd if A & finales_afn]
 
 
-# salida 
+# salida
 
 def formato_conjunto(estados):
     """{1, 5} -> '{1 5}'; el conjunto vacío -> '0'."""
@@ -99,34 +99,34 @@ def marca_fila(estado, estado_inicial, estados_finales):
     return ""
 
 
-def imprimir_afd(estados_afd, delta_afd, alfabeto, estado_inicial, estados_finales, archivo):
+def imprimir_afd(estados_afd, delta_afd, alfabeto, estado_inicial, estados_finales):
     ancho = max(len(formato_conjunto(A)) for A in estados_afd)
+    encabezado = [" " * 3, " " * ancho] + [f"{simbolo:<{ancho}}" for simbolo in alfabeto]
+    print(" ".join(encabezado).rstrip())
     for estado in estados_afd:
         columnas = [f"{marca_fila(estado, estado_inicial, estados_finales):<3}",
                     f"{formato_conjunto(estado):<{ancho}}"]
         for simbolo in alfabeto:
             columnas.append(f"{formato_conjunto(delta_afd[(estado, simbolo)]):<{ancho}}")
-        fila = " ".join(columnas).rstrip()
-        print(fila)
-        archivo.write(fila + "\n")
+        print(" ".join(columnas).rstrip())
 
 
-# main 
+# main
 
-def resolver_caso(lineas, archivo):
+def resolver_caso(lineas):
     estados_iniciales, alfabeto, finales_afn, delta = leer_caso(lineas)
     estados_afd, delta_afd = construccion_subconjuntos(estados_iniciales, alfabeto, delta)
     finales = finales_del_afd(estados_afd, finales_afn)
-    imprimir_afd(estados_afd, delta_afd, alfabeto, estados_iniciales, finales, archivo)
+    imprimir_afd(estados_afd, delta_afd, alfabeto, estados_iniciales, finales)
 
 
 def main():
     todas_las_lineas = [linea.strip() for linea in sys.stdin if linea.strip()]
     lineas = iter(todas_las_lineas)
     cantidad_casos = int(next(lineas))
-    with open("output.txt", "w") as archivo:
-        for _ in range(cantidad_casos):
-            resolver_caso(lineas, archivo)
+    for _ in range(cantidad_casos):
+        resolver_caso(lineas)
+
 
 if __name__ == "__main__":
     main()

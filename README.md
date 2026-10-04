@@ -1,60 +1,113 @@
-Student Information
-Full name: JERONIMO RESTREPO CARDONA
-Class number: C2666-SI2002-4855
-Environment
-Operating System: Windows 11
-Programming language: Python 3.12.3
-Tools used: No external libraries required (only the Python standard library, sys).
-How to Run
-Make sure Python 3 is installed. On Linux/macOS it is usually available as python3; on Windows it is usually python.
-Place the input file (e.g. input.txt) in the same directory as minimizar.py, following the input format described in the assignment.
-Run the program, feeding the input file into standard input.
+# SI2002 Formal Languages - Assignment 2: Subset Construction
 
-On Linux / macOS (bash/zsh):
+## Student information
 
-bash
-python3 minimizar.py < input.txt
+- **Full name:** Jeronimo Restrepo Cardona
+- **Class number:** C2666-SI2002-4855
 
-To save the output to a file instead of printing it to the console:
+## Environment
 
-bash
-python3 minimizar.py < input.txt > output.txt
+- **Operating system:** Windows 11
+- **Programming language:** Python 3.12.3
+- **Tools:** Python standard library only (`sys`, `re` and `collections`). No external packages are needed.
 
-On Windows (PowerShell):
+## Files
 
-PowerShell does not support the < redirection operator, so Get-Content is used together with a pipe instead:
+- `subset.py`: the program.
+- `README.md`: this file.
 
-powershell
-Get-Content input.txt | python minimizar.py
+## Input format
 
-To save the output to a file:
+The program reads from standard input, following the format of the assignment:
 
-powershell
-Get-Content input.txt | python minimizar.py > output.txt
+1. A line with the number of cases `c`.
+2. For each case:
+   1. A line with the number of states `n` (the states are `1, 2, ..., n`).
+   2. A line with the initial states, separated by blank spaces.
+   3. A line with the alphabet, with symbols separated by blank spaces.
+   4. A line with the final states, separated by blank spaces.
+   5. `n` lines, one per state in order: the state followed by one set per symbol (in the order of the alphabet). Sets are written with braces, like `{1 5}`. The empty set is written as `0`.
 
-On Windows (cmd.exe / Command Prompt):
+Example (one case):
 
-The classic Windows Command Prompt does support <, so the same syntax as bash works:
+```
+1
+5
+3 5
+a b
+1 4
+1 {1 5} 0
+2 {1} 0
+3 {2 4} 0
+4 0 {5}
+5 {1 5} {4}
+```
 
-Algorithm Explanation
+## How to run
 
-This program implements the table-filling algorithm for DFA minimization, as presented in Kozen (1997), Automata and Computability, Lecture 14.
+Make sure Python 3 is installed. Put the input file (for example `input.txt`) in the same folder as `subset.py` and feed it to the program through standard input.
 
-Given a DFA M = (Q, Σ, δ, s, F) with no inaccessible states, the goal is to find every pair of states (p, q) that are equivalent — that is, states that cannot be distinguished by any input string. Formally, p and q are equivalent if and only if, for every string x ∈ Σ*, δ̂(p, x) ∈ F exactly when δ̂(q, x) ∈ F.
+**Linux / macOS (bash or zsh):**
 
-The algorithm works by doing the opposite: instead of directly proving equivalence, it iteratively marks pairs of states as distinguishable, and whatever remains unmarked at the end is equivalent.
+```bash
+python3 subset.py < input.txt
+```
 
-Step 1 — Base case. For every pair of states (p, q), if exactly one of them is a final state, mark the pair as distinguishable. This is because the empty string ε already tells them apart: one reaches a final state and the other does not.
+**Windows, PowerShell** (PowerShell does not support the `<` operator, so a pipe is used):
 
-Step 2 — Inductive step (propagation). Repeat the following until no new pair gets marked in a full pass: For every still-unmarked pair (p, q) and every symbol a in the alphabet, look at where each state goes: δ(p, a) and δ(q, a). If the resulting pair (δ(p, a), δ(q, a)) is already marked as distinguishable, then (p, q) must also be marked as distinguishable. Intuitively, this means: reading a and then a string that distinguishes the two destination states is itself a string that distinguishes p from q.
+```powershell
+Get-Content input.txt | python subset.py
+```
 
-This step is repeated to a fixed point — that is, until an entire pass over all pairs produces no new marks — because marking a new pair in one round can enable marking additional pairs in the next round.
+**Windows, Command Prompt (cmd.exe):**
 
-Step 3 — Result. Once the fixed point is reached, every pair (p, q) that was never marked is equivalent: no string of any length can distinguish them, since if one existed, the propagation step would eventually have marked the pair.
+```bat
+python subset.py < input.txt
+```
 
-Complexity. For a DFA with n states and an alphabet of size k, the algorithm considers O(n²) pairs, and the propagation loop revisits all pairs and all symbols until convergence, giving a worst-case time complexity of O(n² · k) (in the straightforward implementation used here, without additional optimizations such as the linked-list based partition refinement).
+The program only prints to the console. To save the result in a file, redirect the output:
 
-Implementation Notes
-Input is read line by line: number of cases, then for each case the number of states, the alphabet, the final states, and one line per state containing the state's id followed by its transitions (in the same order as the alphabet).
-Equivalence is represented with a boolean matrix marcados[p][q] (for p < q), where True means the pair is known to be distinguishable.
-The output only prints pairs (p, q) with p < q that remain unmarked after the algorithm converges, sorted in lexicographical order (guaranteed naturally by iterating p and q in increasing order).
+```bash
+python3 subset.py < input.txt > output.txt
+```
+
+(In PowerShell, use `Get-Content input.txt | python subset.py | Out-File -Encoding ascii output.txt`.)
+
+## Output format
+
+For each case the program prints a table for the deterministic automaton M, with no extra lines (no blank lines and no messages). The first line of the table is a header with the symbols of the alphabet, followed by one row per state of M. Tables of different cases are printed one after the other.
+
+- A state of M is named after the set of NFA states that it represents, for example `{1 2 4 5}`. The empty set is written as `0`, as in the input.
+- The first column marks the initial state with `->`, the final states with `<-`, and a state that is both with `<->`.
+- After the state, there is one column per symbol, in the same order as the alphabet of the input. Every cell contains one state of M.
+
+Output for the example above:
+
+```
+              a         b
+->  {3 5}     {1 2 4 5} {4}
+<-  {1 2 4 5} {1 5}     {4 5}
+<-  {4}       0         {5}
+<-  {1 5}     {1 5}     {4}
+<-  {4 5}     {1 5}     {4 5}
+    0         0         0
+    {5}       {1 5}     {4}
+```
+
+## Algorithm explanation
+
+The program implements the Subset Construction presented in Kozen (1997), Lecture 6. It turns an NFA `N = (Q, Sigma, Delta, S, F)` into a DFA `M` that accepts the same language. The idea is that each state of `M` is a set of states of `N`: the states in which `N` could be at the same time after reading some input.
+
+1. **Initial state.** The initial state of `M` is the set `S` of initial states of `N`.
+2. **Transitions.** For a state `A` of `M` (a set of NFA states) and a symbol `a`, the transition is the union of `Delta(q, a)` for every `q` in `A`. This gives exactly one destination for each pair `(A, a)`, so `M` is deterministic.
+3. **Exploring only reachable states.** The program keeps a queue of states that are still pending. It takes a state from the queue, computes its transition for every symbol, and when it finds a set that was not seen before, it adds it to the list of states of `M` and to the queue. It stops when the queue is empty. The sets that cannot be reached from the initial state are inaccessible states, so they are not built and do not change the language (there are at most `2^n` sets, but usually far fewer are reachable).
+4. **Final states.** A state of `M` is final if it contains at least one final state of `N`.
+5. **Empty set.** The empty set is a state like any other. When a union of destinations is empty, the empty set is added as a state of `M` (named `0`). Its transitions go to itself for every symbol, so the transition function of `M` is defined for every state and symbol.
+
+Each state of `M` is processed once and, for each symbol, the program does one union of at most `n` sets. In the worst case the number of states of `M` is `2^n`.
+
+## Implementation notes
+
+- A state of `M` is stored as a `frozenset` of NFA states. A normal `set` cannot be used as a dictionary key because it can change, while a `frozenset` cannot.
+- The transitions of the NFA are kept in a dictionary `delta[(state, symbol)]`. A missing entry is treated as the empty set.
+- Blank lines in the input are ignored.
